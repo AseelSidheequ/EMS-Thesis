@@ -171,7 +171,7 @@ for i, col in enumerate(SIGNALS):
     ax.grid(True, axis='y', alpha=0.20)
 
 fig2.suptitle('DWT Energy Distribution', fontsize=14, fontweight='bold')
-plt.tight_layout(rect=[0, 0.03, 1, 0.96])  # restored to original tight margin
+plt.tight_layout(rect=[0, 0.03, 1, 0.96]) 
 plt.savefig('output/fig_spectral_dwt.png', dpi=150, bbox_inches='tight')
 plt.close()
 print('Saved: output/fig_spectral_dwt.png')
