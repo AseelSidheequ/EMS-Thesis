@@ -175,3 +175,116 @@ plt.tight_layout(rect=[0, 0.03, 1, 0.96])
 plt.savefig('output/fig_spectral_dwt.png', dpi=150, bbox_inches='tight')
 plt.close()
 print('Saved: output/fig_spectral_dwt.png')
+
+
+
+# POINT 1 : Price Buy – sample daily plots
+# POINT 2 : Grid / Battery – one day per month
+
+PRICE_SAMPLE_DAYS = [
+    ('Mar',  2),  
+    ('Mar', 14), 
+    ('Sep',  2),
+    ('Sep', 14),   
+]
+
+SYNC_REP_DAY = 14   # Day 14 of every month
+
+_MONTH_STARTS = {
+    'Jan': 0,    'Feb': 744,  'Mar': 1416, 'Apr': 2160,
+    'May': 2880, 'Jun': 3624, 'Jul': 4344, 'Aug': 5088,
+    'Sep': 5832, 'Oct': 6552, 'Nov': 7296, 'Dec': 8016,
+}
+
+def _day_start(month_abbr, day_1indexed):
+    """Return the absolute hour index for the start of a given day."""
+    return _MONTH_STARTS[month_abbr] + (day_1indexed - 1) * 24
+
+# PLOT 3 – Price Buy
+
+n_days  = len(PRICE_SAMPLE_DAYS)
+n_cols  = 2
+n_rows  = (n_days + 1) // n_cols
+
+_PRICE_COLOURS = ['#1565C0', '#42A5F5', '#BF360C', '#FF7043',
+                  '#2E7D32', '#66BB6A', '#6A1B9A', '#AB47BC']
+
+fig3, axes3 = plt.subplots(n_rows, n_cols, figsize=(12, 3.8 * n_rows), sharey=True)
+axes3 = np.array(axes3).flatten()
+
+hours_24 = np.arange(24)
+
+for i, (month, day) in enumerate(PRICE_SAMPLE_DAYS):
+    ax  = axes3[i]
+    col = _PRICE_COLOURS[i % len(_PRICE_COLOURS)]
+    s   = _day_start(month, day)
+    price = df['price_buy_EUR_per_kWh'].iloc[s:s + 24].values
+
+    ax.fill_between(hours_24, price, alpha=0.12, color=col)
+    ax.plot(hours_24, price, color=col, linewidth=2.0,
+            marker='o', markersize=4, markerfacecolor='white', markeredgewidth=1.5)
+
+    ax.set_xlim(0, 23)
+    ax.set_xticks(range(0, 24, 2))
+    ax.set_xlabel('Hour of day', fontsize=8.5)
+    ax.set_ylabel('Price (EUR/MWh)', fontsize=8.5)
+    ax.set_title(f'{month} – Day {day}', fontsize=10, fontweight='bold', pad=6)
+    ax.tick_params(labelsize=8)
+    ax.grid(True, alpha=0.22)
+
+for j in range(n_days, len(axes3)):
+    axes3[j].set_visible(False)
+
+fig3.suptitle('Price Buy – Sample Daily Profiles', fontsize=12, fontweight='bold')
+plt.tight_layout(rect=[0, 0.02, 1, 0.94])
+plt.savefig('output/fig_price_daily.png', dpi=150, bbox_inches='tight')
+plt.close()
+print('Saved: output/fig_price_daily.png')
+
+# PLOT 4 – Grid Buy / Battery Charge / Discharge
+
+
+SYNC_SIGNALS = {
+    'grid_buy_kW':          ('#C62828', 'Grid Buy'),
+    'battery_charge_kW':    ('#1565C0', 'Battery Charge'),
+    'battery_discharge_kW': ('#2E7D32', 'Battery Discharge'),
+}
+
+MONTH_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+fig4, axes4 = plt.subplots(4, 3, figsize=(15, 13), sharey=True)
+axes4 = axes4.flatten()
+
+for idx, month in enumerate(MONTH_ORDER):
+    ax = axes4[idx]
+    s  = _day_start(month, SYNC_REP_DAY)
+
+    for col, (color, label) in SYNC_SIGNALS.items():
+        vals = df[col].iloc[s:s + 24].values
+        ax.plot(hours_24, vals, color=color, linewidth=1.8, label=label)
+        ax.fill_between(hours_24, vals, alpha=0.07, color=color)
+
+        if vals.max() > 0.5:
+            pk = int(np.argmax(vals))
+            ax.axvline(pk, color=color, linestyle=':', linewidth=1.0, alpha=0.65)
+
+    ax.set_xlim(0, 23)
+    ax.set_xticks(range(0, 24, 4))
+    ax.set_xlabel('Hour of day', fontsize=8)
+    ax.set_ylabel('Power (kW)', fontsize=8)
+    ax.set_title(f'{month}  (Day {SYNC_REP_DAY})', fontsize=10, fontweight='bold', pad=5)
+    ax.tick_params(labelsize=7.5)
+    ax.grid(True, alpha=0.20)
+
+    if idx == 0:
+        ax.legend(fontsize=8, loc='upper left', framealpha=0.85)
+
+fig4.suptitle(
+    'Grid Buy · Battery Charge · Battery Discharge',
+     fontsize=12, fontweight='bold',
+)
+plt.tight_layout(rect=[0, 0.01, 1, 0.94])
+plt.savefig('output/fig_grid_battery_sync.png', dpi=150, bbox_inches='tight')
+plt.close()
+print('Saved: output/fig_grid_battery_sync.png')
